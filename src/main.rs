@@ -11,5 +11,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db.migrate().await?;
     DB.set(db).unwrap();
 
+    let _db = DB.get().unwrap();
+    let res = _db.add_event("123456", 1234, "company_name").await?;
+
+    println!("{}", res);
     Ok(())
 }
