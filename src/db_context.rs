@@ -24,6 +24,12 @@ pub struct Database {
     pool: SqlitePool,
 }
 
+#[derive(Debug, sqlx::FromRow)]
+pub struct EventInfo {
+    pub id: i32,
+    pub name: String
+}
+
 impl Database {
     pub async fn open() -> Result<Self, sqlx::Error> {
         let pool = SqlitePool::connect("./sql.db3?mode=rwc").await?;
@@ -78,5 +84,36 @@ impl Database {
         Ok(
             "Компания добавлена к списку отслеживаемых!".to_string()
         )
+    }
+
+    pub async fn get_events(
+        &self,
+        telegram_id: &str
+    ) -> Result<Vec<EventInfo>, sqlx::Error> {
+
+        Ok(sqlx::query_as::<_, EventInfo>(
+            "
+            SELECT S.id, C.name FROM subscriptions S
+            INNER JOIN companies C ON S.company_id = C.id
+            WHERE telegram_id = ?
+            "
+        )
+        .bind(telegram_id)
+        .fetch_all(&self.pool)
+        .await?)
+    }
+
+    pub async fn delete_event(
+        &self,
+        id: i32
+    ) -> Result<String, sqlx::Error> {
+        sqlx::query(
+            "DELETE FROM subscriptions WHERE id = ?"
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok("Компания удалена из отслеживаемых".to_string())
     }
 }

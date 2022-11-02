@@ -2,6 +2,9 @@
 name = "e-disclosure-events-bot"
 version = "0.1.0"
 edition = "2021"
+authors = [ "Vladimir Glukhov <glukhov.root@gmail.com>" ]
+description = "Telegram bot, parser events from e-disclosure"
+repository = "https://github.com/root-glukhov/e-disclosure-events-bot"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

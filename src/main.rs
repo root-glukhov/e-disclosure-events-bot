@@ -15,5 +15,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let res = _db.add_event("123456", 1234, "company_name").await?;
 
     println!("{}", res);
+
+    let res = _db.get_events("123456").await?;
+
+    for row in res {
+        let r = _db.delete_event(row.id).await?;
+        println!("{}", r);
+    }
+
     Ok(())
 }
