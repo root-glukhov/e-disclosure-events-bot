@@ -2,11 +2,11 @@ use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
-#[derive(Debug)]
-pub struct CompanyInfo {
-    pub company_id: i64,
-    pub name: String
-}
+// #[derive(Debug)]
+// pub struct CompanyInfo {
+//     pub company_id: i64,
+//     pub name: String
+// }
 
 fn http_client() -> Client {
     reqwest::Client::builder()
@@ -16,7 +16,7 @@ fn http_client() -> Client {
         .unwrap()
 }
 
-pub async fn search_company(query: &str) -> Result<Vec<CompanyInfo>, String> {
+pub async fn search_company(query: &str) -> Result<Vec<(i32, String)>, String> {
     let params = [
         ("lastPageSize", "10"),
         ("lastPageNumber", "1"),
@@ -34,9 +34,9 @@ pub async fn search_company(query: &str) -> Result<Vec<CompanyInfo>, String> {
 
     let td = Selector::parse("td").unwrap();
     let a = Selector::parse("a").unwrap();
-    let re_i64 = Regex::new(r"\d+").unwrap();
+    let re_i32 = Regex::new(r"\d+").unwrap();
 
-    Ok(Html::parse_fragment(&html)
+    let result = Html::parse_fragment(&html)
         .select(&td)
         .collect::<Vec<_>>()
         .chunks_exact(6)
@@ -44,13 +44,12 @@ pub async fn search_company(query: &str) -> Result<Vec<CompanyInfo>, String> {
             let link_elem = chunk[0].select(&a).next().unwrap();
             let link_href = link_elem.value().attr("href").unwrap();
             let company_id = String::from(
-                re_i64.find(link_href).unwrap().as_str())
-                .parse::<i64>().unwrap();
+                re_i32.find(link_href).unwrap().as_str())
+                .parse::<i32>().unwrap();
 
-            CompanyInfo {
-                company_id: company_id,
-                name: link_elem.inner_html()
-            }
+            (company_id, link_elem.inner_html())
         })
-        .collect::<Vec<CompanyInfo>>())
+        .collect::<Vec<(i32, String)>>();
+
+    Ok(result)
 }

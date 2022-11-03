@@ -24,11 +24,11 @@ pub struct Database {
     pool: SqlitePool,
 }
 
-#[derive(Debug, sqlx::FromRow)]
-pub struct EventInfo {
-    pub id: i32,
-    pub name: String
-}
+// #[derive(Debug, sqlx::FromRow)]
+// pub struct EventInfo {
+//     pub id: i32,
+//     pub name: String
+// }
 
 impl Database {
     pub async fn open() -> Result<Self, sqlx::Error> {
@@ -89,9 +89,9 @@ impl Database {
     pub async fn get_events(
         &self,
         telegram_id: &str
-    ) -> Result<Vec<EventInfo>, sqlx::Error> {
+    ) -> Result<Vec<(i32, String)>, sqlx::Error> {
 
-        Ok(sqlx::query_as::<_, EventInfo>(
+        Ok(sqlx::query_as::<_, (i32, String)>(
             "
             SELECT S.id, C.name FROM subscriptions S
             INNER JOIN companies C ON S.company_id = C.id
@@ -106,7 +106,7 @@ impl Database {
     pub async fn delete_event(
         &self,
         id: i32
-    ) -> Result<String, sqlx::Error> {
+    ) -> Result<(), sqlx::Error> {
         sqlx::query(
             "DELETE FROM subscriptions WHERE id = ?"
         )
@@ -114,6 +114,6 @@ impl Database {
         .execute(&self.pool)
         .await?;
 
-        Ok("Компания удалена из отслеживаемых".to_string())
+        Ok(())
     }
 }

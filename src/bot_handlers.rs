@@ -18,6 +18,18 @@ enum Command {
     Delete,
 }
 
+struct Data {
+    int: i32,
+    text: String
+}
+
+impl From<(i32, String)> for Data {
+    fn from(item: (i32, String)) -> Self {
+        Data { int: item.0, text: item.1 }
+    }
+}
+
+
 pub async fn message_handler(
     bot: Bot,
     msg: Message,
@@ -33,8 +45,18 @@ pub async fn message_handler(
                 .await?;
             }
             Ok(Command::Add(query)) => {
-                let companies = parser::search_company(&query).await.unwrap(); 
-                let keyboard = make_keyboard(companies);
+                let companies = parser::search_company(&query)
+                    .await
+                    .unwrap()
+                    .iter()
+                    .map(|x| {
+                        Data { int: x.0, text: x.1.to_string() }
+                    })
+                    .collect::<Vec<Data>>();
+
+                let keyboard = make_keyboard(
+                    "add", companies
+                );
                 
                 bot.send_message(msg.chat.id, "Выберите компанию из найденных:")
                     .reply_markup(keyboard)
@@ -42,7 +64,22 @@ pub async fn message_handler(
             }
 
             Ok(Command::Delete) => {
+                let _db = DB.get().unwrap();
+                let data =_db.get_events(
+                    &msg.chat.id.to_string()
+                )
+                .await
+                .unwrap()
+                .iter()
+                .map(|x| {
+                    Data { int: x.0, text: x.1.to_string() }
+                })
+                .collect::<Vec<Data>>();
 
+                let keyboard = make_keyboard("delete", data);
+                bot.send_message(msg.chat.id, "Удаление из отслеживаемых:")
+                    .reply_markup(keyboard)
+                    .await?;
             }
 
             Err(_) => {
@@ -63,29 +100,49 @@ pub async fn callback_handler(
         let message = q.message.unwrap();
         bot.delete_message(message.chat.id, message.id).await?;
 
-        let a: Vec<&str> = data.split("|").collect();
 
+        let data: Vec<&str> = data.split("|").collect();
         let _db = DB.get().unwrap();
-        let res = _db.add_event(
-            &message.chat.id.to_string(), 
-            a[0].parse::<i32>().unwrap(),
-            a[1]
-        )
-        .await?;
+        let id = data[1].parse::<i32>().unwrap();
 
-        bot.send_message(q.from.id, res).await?;
+        match data[0] {
+            "add" => {  
+                let res = _db.add_event(
+                    &message.chat.id.to_string(), 
+                    id,
+                    data[2]
+                )
+                .await?;
+        
+                bot.send_message(q.from.id, res).await?;
+            },
+            "delete" => {
+                if let Ok(_) = _db.delete_event(id).await {
+                    let res = format!(
+                        "Компания {} удалена из отслеживаемых",
+                        data[2]
+                    );
+                    
+                    bot.send_message(q.from.id, res).await?;
+                }
+            },
+            _ => { }
+        }
     }
-
     Ok(())
 }
 
-fn make_keyboard(companies: Vec<parser::CompanyInfo>) -> InlineKeyboardMarkup {
+fn make_keyboard(
+    cmd: &str,
+    data: Vec<Data>
+) -> InlineKeyboardMarkup {
     let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
 
-    for company in companies {
-        let info = format!("{}|{}", company.company_id, company.name);
+    for item in data {
+        let values = format!("{}|{}|{}", cmd, item.int, item.text);
         let button = InlineKeyboardButton::callback(
-            company.name, info);
+            item.text, values
+        );
 
         keyboard.push(vec![ button ]);
     }
