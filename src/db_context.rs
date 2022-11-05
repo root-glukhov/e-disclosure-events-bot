@@ -24,12 +24,6 @@ pub struct Database {
     pool: SqlitePool,
 }
 
-// #[derive(Debug, sqlx::FromRow)]
-// pub struct EventInfo {
-//     pub id: i32,
-//     pub name: String
-// }
-
 impl Database {
     pub async fn open() -> Result<Self, sqlx::Error> {
         let pool = SqlitePool::connect("./sql.db3?mode=rwc").await?;
@@ -115,5 +109,18 @@ impl Database {
         .await?;
 
         Ok(())
+    }
+
+    pub async fn get_subscriptions(&self) -> Result<Vec<(i64, i32, String)>, sqlx::Error> {
+        let res = sqlx::query_as::<_, (i64, i32, String)>(
+            "
+            SELECT S.telegram_id, C.company_id, C.name FROM companies C 
+            INNER JOIN subscriptions S ON C.id = S.company_id
+            "
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(res)
     }
 }
