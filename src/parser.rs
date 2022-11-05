@@ -1,12 +1,15 @@
+use chrono::NaiveDateTime as DateTime;
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
-// #[derive(Debug)]
-// pub struct CompanyInfo {
-//     pub company_id: i64,
-//     pub name: String
-// }
+
+#[derive(Debug)]
+pub struct EventInfo {
+    pub date_time: DateTime,
+    pub title: String,
+    pub url: String
+}
 
 fn http_client() -> Client {
     reqwest::Client::builder()
@@ -52,4 +55,39 @@ pub async fn search_company(query: &str) -> Result<Vec<(i32, String)>, String> {
         .collect::<Vec<(i32, String)>>();
 
     Ok(result)
+}
+
+pub async fn search_events(company_id: i32) -> Result<Vec<EventInfo>, String> {
+    let url = format!(
+        "https://e-disclosure.ru/Event/Page?companyId={}&year=2022", 
+        company_id
+    );
+
+    let html = http_client().get(url)
+        .send().await.unwrap()
+        .text().await.unwrap();
+
+    let fragment = Html::parse_fragment(&html);
+
+    let td = Selector::parse("td").unwrap();
+    let a = Selector::parse("a").unwrap();
+
+    Ok(fragment.select(&td)
+        .collect::<Vec<_>>()
+        .chunks_exact(3)
+        .map(|chunk| {
+            let link_elem = chunk[2].select(&a).next().unwrap();
+            let link_href = link_elem.value().attr("href").unwrap();
+
+            let dt_str = chunk[1].inner_html().replace("&nbsp;", " ");
+            let dt = DateTime::parse_from_str(&dt_str, "%d.%m.%Y %H:%M")
+                .unwrap();
+                
+            EventInfo {
+                date_time: dt, 
+                title: link_elem.inner_html(),
+                url: link_href.to_string()
+            }
+        })
+        .collect::<Vec<EventInfo>>())
 }

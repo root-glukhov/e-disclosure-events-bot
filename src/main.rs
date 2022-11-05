@@ -1,8 +1,9 @@
 mod db_context;
 mod bot_handlers;
 mod parser;
+mod postman;
 
-use dotenv_codegen::dotenv;
+use dotenvy_macro::{self, dotenv};
 use once_cell::sync::OnceCell;
 use teloxide::{
     Bot, 
@@ -17,10 +18,17 @@ static DB: OnceCell<db_context::Database> = OnceCell::new();
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Database
     let mut db = db_context::Database::open().await?;
     db.migrate().await?;
     DB.set(db).unwrap();
 
+    // Postman
+    tokio::spawn(async move {
+        postman::start().await;
+    });
+
+    // Teloxide
     let bot = Bot::new(dotenv!("TELOXIDE_TOKEN"));
 
     let handler = dptree::entry()
@@ -33,18 +41,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .dispatch()
         .await;
-
-    // let _db = DB.get().unwrap();
-    // let res = _db.add_event("123456", 1234, "company_name").await?;
-
-    // println!("{}", res);
-
-    // let res = _db.get_events("123456").await?;
-
-    // for row in res {
-    //     let r = _db.delete_event(row.id).await?;
-    //     println!("{}", r);
-    // }
-
+        
     Ok(())
 }
