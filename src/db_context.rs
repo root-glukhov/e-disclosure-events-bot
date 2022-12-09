@@ -46,7 +46,7 @@ impl Database {
         .bind(company_id)
         .bind(company_name)
         .fetch_one(&self.pool)
-        .await?;
+        .await;
 
         let ct_id = match insert_company {
             Ok(r) => r,
