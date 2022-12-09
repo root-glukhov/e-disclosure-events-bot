@@ -1,0 +1,42 @@
+name: e-disclosure-events-bot Deployment Workflow
+         
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  build_and_deploy:
+    name: edisclosure-events-bot
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features
+
+      - uses: burnett01/rsync-deployments@5.1
+        with:
+          switches: -avzr --delete
+          path: ./target/release/e-disclosure-events-bot
+          remote_path: ${{ secrets.PATH }}
+          remote_host: ${{ secrets.HOST }}
+          remote_user: ${{ secrets.USER }}
+          remote_key:  ${{ secrets.SSHPRIVATE }}
+

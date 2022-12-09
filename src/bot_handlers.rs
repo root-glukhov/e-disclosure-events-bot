@@ -29,7 +29,6 @@ impl From<(i32, String)> for Data {
     }
 }
 
-
 pub async fn message_handler(
     bot: Bot,
     msg: Message,
@@ -112,9 +111,12 @@ pub async fn callback_handler(
                     id,
                     data[2]
                 )
-                .await?;
-        
-                bot.send_message(q.from.id, res).await?;
+                .await;
+
+                match res {
+                    Ok(r) => bot.send_message(q.from.id, r).await?,
+                    Err(e) => bot.send_message(q.from.id, format!("Ошибка: {}", e.to_string())).await?
+                };
             },
             "delete" => {
                 if let Ok(_) = _db.delete_event(id).await {
