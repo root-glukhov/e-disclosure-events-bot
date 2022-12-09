@@ -42,5 +42,5 @@ jobs:
           remote_path: ${{ secrets.PATH }}
           remote_host: ${{ secrets.HOST }}
           remote_user: ${{ secrets.USER }}
-          remote_key:  ${{ secrets.SSHPRIVATE }}
+          remote_key:  ${{ secrets.SSHKEY }}
 
