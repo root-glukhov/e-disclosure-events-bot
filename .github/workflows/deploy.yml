@@ -30,10 +30,10 @@ jobs:
         with:
           toolchain: stable
 
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: build
-      #     args: --release --all-features
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features
 
       - uses: burnett01/rsync-deployments@5.2.1
         with:
