@@ -10,7 +10,7 @@ use teloxide::{
 #[derive(BotCommands)]
 #[command(rename_rule = "lowercase", description = "Команды:")]
 enum Command {
-    #[command(description = "Помощь")]
+    #[command(description = "Помощь v0.1")]
     Help,
     #[command(description = "/add <название компании> - чтобы добавить к отслеживаемым")]
     Add(String),
